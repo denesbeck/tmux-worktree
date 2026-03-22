@@ -22,6 +22,7 @@ BASE_BRANCH=$(git branch --format='%(refname:short)' --sort=-committerdate | \
     --border-label=" branches " \
     --prompt=" " \
     --pointer="▸" \
+    --gutter=" " \
     --style=minimal \
     --color="$FZF_COLORS" \
     --header="current: ${CURRENT_BRANCH}" \

@@ -47,6 +47,7 @@ SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
     --border-label=" worktrees " \
     --prompt=" " \
     --pointer="▸" \
+    --gutter=" " \
     --style=minimal \
     --color="$FZF_COLORS" \
     --no-info \

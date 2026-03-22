@@ -9,7 +9,7 @@ C_DIM="\033[38;2;115;121;148m"     # #737994
 C_BOLD="\033[1m"
 C_RESET="\033[0m"
 
-FZF_COLORS="bg+:-1,gutter:-1,current-bg:-1,hl:#ca9ee6,hl+:#ca9ee6,pointer:#e78284,prompt:#8caaee,border:#8caaee,label:#8caaee"
+FZF_COLORS="bg:-1,fg:-1,bg+:-1,fg+:-1,gutter:-1,current-bg:-1,selected-bg:-1,list-bg:-1,input-bg:-1,header-bg:-1,hl:#ca9ee6,hl+:#ca9ee6,pointer:#e78284,prompt:#8caaee,border:#8caaee,label:#8caaee"
 
 die() {
   echo ""
