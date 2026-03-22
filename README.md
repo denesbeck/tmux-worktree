@@ -10,11 +10,13 @@ tmux-worktree provides a terminal UI for git worktree management directly inside
 
 **Key Features:**
 - Create worktrees with interactive base branch selection
+- AI tool picker — choose between Claude Code, Gemini CLI, Aider, Codex CLI, OpenCode, or a plain shell when opening a worktree (only installed tools are shown as selectable)
 - Switch between existing worktrees (opens or focuses tmux window)
 - Remove worktrees with confirmation and cleanup (directory, branch, tmux window)
+- Safe removal — conditional force for dirty worktrees, safe branch deletion with fallback prompt
 - Dirty state and active window indicators
-- Default branch protection on removal
-- Fully configurable keybindings and popup dimensions
+- Default branch and main worktree protection on removal
+- Fully configurable keybindings, popup dimensions, and tool list
 
 ## Prerequisites
 
@@ -67,20 +69,22 @@ tmux source ~/.config/tmux/tmux.conf
 1. Press `prefix + W`
 2. Select a base branch from the fzf picker
 3. Enter a new branch name
-4. Worktree is created and a new tmux window opens
+4. Select a tool to open with (skipped if only one is available)
+5. Worktree is created and a new tmux window opens with the selected tool
 
 ### Switch workflow
 
 1. Press `prefix + w`
 2. Select a worktree from the list (`*` = dirty, window icon = tmux window open)
-3. Jumps to existing window or opens a new one
+3. Jumps to existing window, or select a tool and open a new one
 
 ### Remove workflow
 
 1. Press `prefix + X`
 2. Select a worktree to remove
-3. Confirm deletion (warns about uncommitted changes)
-4. Worktree directory, branch, and tmux window are cleaned up
+3. Confirm deletion (explicit force-remove prompt if worktree has uncommitted changes)
+4. Worktree directory and tmux window are cleaned up
+5. Branch is deleted with safe delete; if unmerged, prompts for force delete or keeps it
 
 ## Configuration
 
@@ -92,8 +96,10 @@ set -g @worktree_create_key 'W'
 set -g @worktree_switch_key 'w'
 set -g @worktree_remove_key 'X'
 
-# Command to run in new worktree windows (default: claude)
-set -g @worktree_open_cmd '$SHELL'
+# Comma-separated list of tools to offer when opening a worktree
+# (default: claude,gemini,aider,codex,opencode,$SHELL)
+# Only installed tools appear as selectable; others are shown dimmed
+set -g @worktree_open_cmds 'claude,gemini,aider,codex,opencode,$SHELL'
 
 # Popup dimensions (default: 60% x 40%)
 set -g @worktree_popup_width '60%'
