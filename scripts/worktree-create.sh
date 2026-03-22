@@ -3,7 +3,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-OPEN_CMD="${1:-claude}"
+OPEN_CMDS="${1:-claude,gemini,aider,codex,opencode,\$SHELL}"
 
 require_git_root
 header "Create"
@@ -63,7 +63,13 @@ done
 
 echo ""
 
-# ── Step 3: Create worktree ─────────────────────────────────────
+# ── Step 3: Select tool ──────────────────────────────────────────
+OPEN_CMD=$(pick_open_cmd "$OPEN_CMDS") || exit 0
+
+echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}${OPEN_CMD}${C_RESET}"
+echo ""
+
+# ── Step 4: Create worktree ─────────────────────────────────────
 SAFE_NAME=$(echo "$NEW_BRANCH" | tr '/' '-')
 WORKTREE_DIR="${GIT_ROOT}/../wt-${SAFE_NAME}"
 
@@ -82,7 +88,7 @@ echo ""
 echo -e "${C_GREEN}${C_BOLD}Worktree created!${C_RESET}"
 echo ""
 
-# ── Step 4: Open in new tmux window ─────────────────────────────
+# ── Step 5: Open in new tmux window ─────────────────────────────
 SESSION=$(tmux display-message -p '#S')
 WINDOW_NAME=$(basename "$NEW_BRANCH")
 ABS_DIR=$(cd "$WORKTREE_DIR" && pwd)

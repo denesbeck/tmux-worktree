@@ -3,7 +3,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-OPEN_CMD="${1:-claude}"
+OPEN_CMDS="${1:-claude,gemini,aider,codex,opencode,\$SHELL}"
 
 require_git_root
 header "Switch"
@@ -13,7 +13,7 @@ WORKTREES=()
 while IFS= read -r line; do
   wt_path=$(echo "$line" | awk '{print $1}')
   wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
-  wt_bare=$(echo "$line" | grep -c "(bare)")
+  wt_bare=$(echo "$line" | grep -c "(bare)" || true)
 
   # Skip bare repos and the main worktree
   if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ]; then
@@ -88,6 +88,7 @@ for entry in "${WORKTREES[@]}"; do
     if [ -n "$win_idx" ]; then
       tmux select-window -t "$SESSION:$win_idx"
     else
+      OPEN_CMD=$(pick_open_cmd "$OPEN_CMDS") || exit 0
       WINDOW_NAME=$(basename "$wt_path")
       tmux new-window -t "$SESSION:" -n "$WINDOW_NAME" -c "$wt_path" "$OPEN_CMD"
     fi
