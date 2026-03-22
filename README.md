@@ -12,7 +12,7 @@ tmux-worktree provides a terminal UI for git worktree management directly inside
 - Create worktrees with interactive base branch selection
 - AI tool picker — choose between Claude Code, Gemini CLI, Aider, Codex CLI, OpenCode, or a plain shell when opening a worktree (only installed tools are shown as selectable)
 - Switch between existing worktrees (opens or focuses tmux window)
-- Remove worktrees with confirmation and cleanup (directory, branch, tmux window)
+- Remove worktrees with multiselect support (remove one or many at once)
 - Safe removal — conditional force for dirty worktrees, safe branch deletion with fallback prompt
 - Dirty state and active window indicators
 - Default branch and main worktree protection on removal
@@ -81,10 +81,10 @@ tmux source ~/.config/tmux/tmux.conf
 ### Remove workflow
 
 1. Press `prefix + X`
-2. Select a worktree to remove
-3. Confirm deletion (explicit force-remove prompt if worktree has uncommitted changes)
-4. Worktree directory and tmux window are cleaned up
-5. Branch is deleted with safe delete; if unmerged, prompts for force delete or keeps it
+2. Select worktree(s) to remove (use **Tab** to select multiple, or just press Enter for single)
+3. Confirm deletion (explicit force-remove prompt if any worktree has uncommitted changes)
+4. Worktree directories and tmux windows are cleaned up
+5. Branches are deleted with safe delete; if unmerged, prompts for force delete per branch or keeps it
 
 ## Configuration
 
