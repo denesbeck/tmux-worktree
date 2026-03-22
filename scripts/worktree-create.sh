@@ -1,42 +1,12 @@
 #!/usr/bin/env bash
 
-# ── Theme (Catppuccin Frappé palette) ────────────────────────────
-C_BLUE="\033[38;2;140;170;238m"    # #8caaee
-C_MAUVE="\033[38;2;202;158;230m"   # #ca9ee6
-C_GREEN="\033[38;2;166;209;137m"   # #a6d189
-C_RED="\033[38;2;231;130;132m"     # #e78284
-C_TEXT="\033[38;2;198;208;245m"    # #c6d0f5
-C_DIM="\033[38;2;115;121;148m"     # #737994
-C_BOLD="\033[1m"
-C_RESET="\033[0m"
-
-die() {
-  echo ""
-  echo -e "  ${C_RED}${C_BOLD}  Error:${C_RESET}${C_TEXT} $1${C_RESET}"
-  echo ""
-  echo -e "  ${C_DIM}Press any key to close...${C_RESET}"
-  read -rsn1
-  exit 1
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 OPEN_CMD="${1:-claude}"
 
-# ── Resolve git root (popup starts in pane's cwd via -d flag) ───
-
-GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || true
-
-if [ -z "$GIT_ROOT" ]; then
-  die "Not inside a git repository."
-fi
-
-cd "$GIT_ROOT"
-REPO_NAME=$(basename "$GIT_ROOT")
-
-# ── Header ───────────────────────────────────────────────────────
-clear
-echo ""
-echo -e "  ${C_MAUVE}${C_BOLD}  Git Worktree${C_RESET}  ${C_DIM}─  ${REPO_NAME}${C_RESET}"
-echo ""
+require_git_root
+header "Create"
 
 # ── Step 1: Select base branch ──────────────────────────────────
 echo -e "  ${C_BLUE}${C_BOLD}❯ Base branch${C_RESET}"
@@ -53,7 +23,7 @@ BASE_BRANCH=$(git branch --format='%(refname:short)' --sort=-committerdate | \
     --prompt="  " \
     --pointer="▸" \
     --style=minimal \
-    --color="bg+:-1,gutter:-1,current-bg:-1,hl:#ca9ee6,hl+:#ca9ee6,pointer:#e78284,prompt:#8caaee,border:#8caaee,label:#8caaee" \
+    --color="$FZF_COLORS" \
     --header="  current: ${CURRENT_BRANCH}" \
     --no-info \
     --ansi) || true
@@ -77,13 +47,11 @@ while true; do
     exit 0
   fi
 
-  # Validate branch name
   if ! git check-ref-format --branch "$NEW_BRANCH" 2>/dev/null; then
     echo -e "  ${C_RED}  Invalid branch name. Try again.${C_RESET}"
     continue
   fi
 
-  # Check if branch already exists
   if git show-ref --verify --quiet "refs/heads/$NEW_BRANCH"; then
     echo -e "  ${C_RED}  Branch already exists. Try again.${C_RESET}"
     continue
