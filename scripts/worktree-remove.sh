@@ -22,15 +22,15 @@ while IFS= read -r line; do
 done < <(git worktree list)
 
 if [ ${#WORKTREES[@]} -eq 0 ]; then
-  echo -e "  ${C_DIM}No worktrees found (besides main).${C_RESET}"
+  echo -e "${C_DIM}No worktrees found (besides main).${C_RESET}"
   echo ""
-  echo -e "  ${C_DIM}Press any key to close...${C_RESET}"
+  echo -e "${C_DIM}Press any key to close...${C_RESET}"
   read -rsn1
   exit 0
 fi
 
 # ── fzf picker ───────────────────────────────────────────────────
-echo -e "  ${C_BLUE}${C_BOLD}❯ Select worktree to remove${C_RESET}"
+echo -e "${C_BLUE}${C_BOLD}❯ Select worktree to remove${C_RESET}"
 echo ""
 
 DISPLAY_LIST=""
@@ -45,7 +45,7 @@ SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
     --layout=reverse \
     --border=rounded \
     --border-label=" worktrees " \
-    --prompt="  " \
+    --prompt=" " \
     --pointer="▸" \
     --style=minimal \
     --color="$FZF_COLORS" \
@@ -82,28 +82,28 @@ fi
 
 # ── Confirm ──────────────────────────────────────────────────────
 echo ""
-echo -e "  ${C_YELLOW}${C_BOLD}  Warning:${C_RESET} This will remove:"
+echo -e "${C_YELLOW}${C_BOLD}Warning:${C_RESET} This will remove:"
 echo ""
-echo -e "  ${C_DIM}branch:${C_RESET}    ${C_RED}${TARGET_BRANCH}${C_RESET}"
-echo -e "  ${C_DIM}directory:${C_RESET} ${C_RED}$(basename "$TARGET_PATH")/${C_RESET}"
+echo -e "${C_DIM}branch:${C_RESET}    ${C_RED}${TARGET_BRANCH}${C_RESET}"
+echo -e "${C_DIM}directory:${C_RESET} ${C_RED}$(basename "$TARGET_PATH")/${C_RESET}"
 echo ""
 
 # Check for uncommitted changes
 if [ -d "$TARGET_PATH" ]; then
   changed=$(git -C "$TARGET_PATH" status --porcelain 2>/dev/null | head -1)
   if [ -n "$changed" ]; then
-    echo -e "  ${C_RED}${C_BOLD}  This worktree has uncommitted changes!${C_RESET}"
+    echo -e "${C_RED}${C_BOLD}This worktree has uncommitted changes!${C_RESET}"
     echo ""
   fi
 fi
 
-echo -ne "  ${C_MAUVE}▸${C_RESET} Confirm? [y/N] "
+echo -ne "${C_MAUVE}▸${C_RESET} Confirm? [y/N] "
 read -rsn1 CONFIRM
 echo ""
 
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
   echo ""
-  echo -e "  ${C_DIM}Cancelled.${C_RESET}"
+  echo -e "${C_DIM}Cancelled.${C_RESET}"
   sleep 0.5
   exit 0
 fi
@@ -115,21 +115,21 @@ SESSION=$(tmux display-message -p '#S')
 win_idx=$(find_tmux_window "$TARGET_PATH")
 if [ -n "$win_idx" ]; then
   tmux kill-window -t "$SESSION:$win_idx" 2>/dev/null || true
-  echo -e "  ${C_DIM}Closed tmux window.${C_RESET}"
+  echo -e "${C_DIM}Closed tmux window.${C_RESET}"
 fi
 
 # ── Remove worktree ──────────────────────────────────────────────
-if ! git worktree remove "$TARGET_PATH" --force 2>&1 | sed "s/^/  /"; then
+if ! git worktree remove "$TARGET_PATH" --force 2>&1; then
   die "Failed to remove worktree."
 fi
 
 # ── Delete branch ────────────────────────────────────────────────
 if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
-  git branch -D "$TARGET_BRANCH" 2>&1 | sed "s/^/  /"
+  git branch -D "$TARGET_BRANCH" 2>&1
 fi
 
 echo ""
-echo -e "  ${C_GREEN}${C_BOLD}  Removed!${C_RESET}"
+echo -e "${C_GREEN}${C_BOLD}Removed!${C_RESET}"
 echo ""
-echo -e "  ${C_DIM}Press Enter to close...${C_RESET}"
+echo -e "${C_DIM}Press Enter to close...${C_RESET}"
 read -r

@@ -13,9 +13,9 @@ FZF_COLORS="bg+:-1,gutter:-1,current-bg:-1,hl:#ca9ee6,hl+:#ca9ee6,pointer:#e7828
 
 die() {
   echo ""
-  echo -e "  ${C_RED}${C_BOLD}  Error:${C_RESET}${C_TEXT} $1${C_RESET}"
+  echo -e "${C_RED}${C_BOLD}Error:${C_RESET}${C_TEXT} $1${C_RESET}"
   echo ""
-  echo -e "  ${C_DIM}Press any key to close...${C_RESET}"
+  echo -e "${C_DIM}Press any key to close...${C_RESET}"
   read -rsn1
   exit 1
 }
@@ -32,7 +32,7 @@ require_git_root() {
 header() {
   clear
   echo ""
-  echo -e "  ${C_MAUVE}${C_BOLD}  Git Worktree${C_RESET}  ${C_DIM}─  ${REPO_NAME}  ─  $1${C_RESET}"
+  echo -e "${C_MAUVE}${C_BOLD}Git Worktree${C_RESET} ${C_DIM}─ ${REPO_NAME} ─ $1${C_RESET}"
   echo ""
 }
 

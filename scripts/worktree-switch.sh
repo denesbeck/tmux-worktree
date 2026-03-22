@@ -40,15 +40,15 @@ while IFS= read -r line; do
 done < <(git worktree list)
 
 if [ ${#WORKTREES[@]} -eq 0 ]; then
-  echo -e "  ${C_DIM}No worktrees found (besides main).${C_RESET}"
+  echo -e "${C_DIM}No worktrees found (besides main).${C_RESET}"
   echo ""
-  echo -e "  ${C_DIM}Press any key to close...${C_RESET}"
+  echo -e "${C_DIM}Press any key to close...${C_RESET}"
   read -rsn1
   exit 0
 fi
 
 # ── fzf picker ───────────────────────────────────────────────────
-echo -e "  ${C_BLUE}${C_BOLD}❯ Select worktree${C_RESET}"
+echo -e "${C_BLUE}${C_BOLD}❯ Select worktree${C_RESET}"
 echo ""
 
 DISPLAY_LIST=""
@@ -63,7 +63,7 @@ SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
     --layout=reverse \
     --border=rounded \
     --border-label=" worktrees " \
-    --prompt="  " \
+    --prompt=" " \
     --pointer="▸" \
     --style=minimal \
     --color="$FZF_COLORS" \
@@ -85,10 +85,8 @@ for entry in "${WORKTREES[@]}"; do
     SESSION=$(tmux display-message -p '#S')
 
     if [ -n "$win_idx" ]; then
-      # Window exists — switch to it
       tmux select-window -t "$SESSION:$win_idx"
     else
-      # Open new window
       WINDOW_NAME=$(basename "$wt_path")
       tmux new-window -t "$SESSION:" -n "$WINDOW_NAME" -c "$wt_path" "$OPEN_CMD"
     fi
