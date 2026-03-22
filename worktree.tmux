@@ -3,26 +3,41 @@
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # User-configurable options with defaults
-default_key="W"
-worktree_key=$(tmux show-option -gqv @worktree_key)
-worktree_key=${worktree_key:-$default_key}
+get_opt() {
+  local val
+  val=$(tmux show-option -gqv "$1")
+  echo "${val:-$2}"
+}
 
-default_open_cmd="claude"
-worktree_open_cmd=$(tmux show-option -gqv @worktree_open_cmd)
-worktree_open_cmd=${worktree_open_cmd:-$default_open_cmd}
+worktree_create_key=$(get_opt @worktree_create_key "W")
+worktree_switch_key=$(get_opt @worktree_switch_key "w")
+worktree_remove_key=$(get_opt @worktree_remove_key "X")
+worktree_open_cmd=$(get_opt @worktree_open_cmd "claude")
+worktree_popup_width=$(get_opt @worktree_popup_width "60%")
+worktree_popup_height=$(get_opt @worktree_popup_height "40%")
 
-default_popup_width="60%"
-worktree_popup_width=$(tmux show-option -gqv @worktree_popup_width)
-worktree_popup_width=${worktree_popup_width:-$default_popup_width}
+popup_flags="-d '#{pane_current_path}' -w $worktree_popup_width -h $worktree_popup_height -E"
 
-default_popup_height="40%"
-worktree_popup_height=$(tmux show-option -gqv @worktree_popup_height)
-worktree_popup_height=${worktree_popup_height:-$default_popup_height}
-
-# Bind key to open the worktree creator popup
-tmux bind-key "$worktree_key" display-popup \
+# prefix + W  →  Create worktree
+tmux bind-key "$worktree_create_key" display-popup \
   -d '#{pane_current_path}' \
   -w "$worktree_popup_width" \
   -h "$worktree_popup_height" \
   -E \
   "bash $CURRENT_DIR/scripts/worktree-create.sh $worktree_open_cmd"
+
+# prefix + w  →  Switch to worktree
+tmux bind-key "$worktree_switch_key" display-popup \
+  -d '#{pane_current_path}' \
+  -w "$worktree_popup_width" \
+  -h "$worktree_popup_height" \
+  -E \
+  "bash $CURRENT_DIR/scripts/worktree-switch.sh $worktree_open_cmd"
+
+# prefix + X  →  Remove worktree
+tmux bind-key "$worktree_remove_key" display-popup \
+  -d '#{pane_current_path}' \
+  -w "$worktree_popup_width" \
+  -h "$worktree_popup_height" \
+  -E \
+  "bash $CURRENT_DIR/scripts/worktree-remove.sh"
