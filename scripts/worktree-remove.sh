@@ -6,6 +6,10 @@ source "$SCRIPT_DIR/common.sh"
 require_git_root
 header "Remove"
 
+# ── Resolve default branch ───────────────────────────────────────
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || true
+DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
+
 # ── Build worktree list ──────────────────────────────────────────
 WORKTREES=()
 while IFS= read -r line; do
@@ -13,8 +17,8 @@ while IFS= read -r line; do
   wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
   wt_bare=$(echo "$line" | grep -c "(bare)")
 
-  # Skip bare repos and the main worktree
-  if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ]; then
+  # Skip bare repos and the default branch
+  if [ "$wt_bare" -gt 0 ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
     continue
   fi
 
@@ -74,9 +78,7 @@ if [ -z "$TARGET_PATH" ]; then
   die "Could not find worktree."
 fi
 
-# Protect default branch
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@') || true
-DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
+# Protect default branch (safety net)
 if [ "$TARGET_BRANCH" = "$DEFAULT_BRANCH" ]; then
   die "Cannot remove the default branch (${DEFAULT_BRANCH})."
 fi
@@ -118,6 +120,10 @@ if [ -n "$win_idx" ]; then
   tmux kill-window -t "$SESSION:$win_idx" 2>/dev/null || true
   echo -e "${C_DIM}Closed tmux window.${C_RESET}"
 fi
+
+# ── Switch to main worktree before destructive operations ────────
+MAIN_WT_PATH=$(git worktree list | head -1 | awk '{print $1}')
+cd "$MAIN_WT_PATH"
 
 # ── Remove worktree ──────────────────────────────────────────────
 if ! git worktree remove "$TARGET_PATH" --force 2>&1; then
