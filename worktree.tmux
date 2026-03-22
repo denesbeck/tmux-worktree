@@ -22,7 +22,7 @@ tmux bind-key "$worktree_create_key" display-popup \
   -w "$worktree_popup_width" \
   -h "$worktree_popup_height" \
   -E \
-  "bash $CURRENT_DIR/scripts/worktree-create.sh '$worktree_open_cmds'"
+  "bash '$CURRENT_DIR/scripts/worktree-create.sh' '$worktree_open_cmds'"
 
 # prefix + w  →  Switch to worktree
 tmux bind-key "$worktree_switch_key" display-popup \
@@ -30,7 +30,7 @@ tmux bind-key "$worktree_switch_key" display-popup \
   -w "$worktree_popup_width" \
   -h "$worktree_popup_height" \
   -E \
-  "bash $CURRENT_DIR/scripts/worktree-switch.sh '$worktree_open_cmds'"
+  "bash '$CURRENT_DIR/scripts/worktree-switch.sh' '$worktree_open_cmds'"
 
 # prefix + X  →  Remove worktree
 tmux bind-key "$worktree_remove_key" display-popup \
@@ -38,4 +38,4 @@ tmux bind-key "$worktree_remove_key" display-popup \
   -w "$worktree_popup_width" \
   -h "$worktree_popup_height" \
   -E \
-  "bash $CURRENT_DIR/scripts/worktree-remove.sh"
+  "bash '$CURRENT_DIR/scripts/worktree-remove.sh'"

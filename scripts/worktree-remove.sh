@@ -18,8 +18,8 @@ while IFS= read -r line; do
   wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
   wt_bare=$(echo "$line" | grep -c "(bare)" || true)
 
-  # Skip bare repos and the default branch
-  if [ "$wt_bare" -gt 0 ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
+  # Skip bare repos, main worktree, and the default branch
+  if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
     continue
   fi
 
