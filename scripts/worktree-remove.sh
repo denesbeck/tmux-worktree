@@ -44,7 +44,7 @@ for entry in "${WORKTREES[@]}"; do
   DISPLAY_LIST+="${branch}"$'\n'
 done
 
-SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
+SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' |
   fzf \
     --multi \
     --height=12 \
@@ -52,7 +52,8 @@ SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
     --border=rounded \
     --border-label=" worktrees " \
     --prompt=" " \
-    --pointer="▸" \
+    --pointer="" \
+    --marker="● " \
     --gutter=" " \
     --style=minimal \
     --color="$FZF_COLORS" \
@@ -90,7 +91,7 @@ while IFS= read -r selected_branch; do
   fi
 
   TARGETS+=("${TARGET_BRANCH}|${TARGET_PATH}")
-done <<< "$SELECTED"
+done <<<"$SELECTED"
 
 if [ ${#TARGETS[@]} -eq 0 ]; then
   echo -e "${C_DIM}No valid worktrees to remove.${C_RESET}"

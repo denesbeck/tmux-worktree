@@ -9,13 +9,13 @@ for cmd in git fzf tmux; do
 done
 
 # ── Theme (Catppuccin Frappé palette) ────────────────────────────
-C_BLUE="\033[38;2;140;170;238m"    # #8caaee
-C_MAUVE="\033[38;2;202;158;230m"   # #ca9ee6
-C_GREEN="\033[38;2;166;209;137m"   # #a6d189
-C_RED="\033[38;2;231;130;132m"     # #e78284
-C_YELLOW="\033[38;2;229;200;144m"  # #e5c890
-C_TEXT="\033[38;2;198;208;245m"    # #c6d0f5
-C_DIM="\033[38;2;115;121;148m"     # #737994
+C_BLUE="\033[38;2;140;170;238m"   # #8caaee
+C_MAUVE="\033[38;2;202;158;230m"  # #ca9ee6
+C_GREEN="\033[38;2;166;209;137m"  # #a6d189
+C_RED="\033[38;2;231;130;132m"    # #e78284
+C_YELLOW="\033[38;2;229;200;144m" # #e5c890
+C_TEXT="\033[38;2;198;208;245m"   # #c6d0f5
+C_DIM="\033[38;2;115;121;148m"    # #737994
 C_BOLD="\033[1m"
 C_RESET="\033[0m"
 
@@ -51,11 +51,11 @@ tool_label() {
   case "$1" in
     claude) echo "Claude Code  (Anthropic)" ;;
     gemini) echo "Gemini CLI   (Google)" ;;
-    aider)  echo "Aider        (Open Source)" ;;
-    codex)    echo "Codex CLI    (OpenAI)" ;;
+    aider) echo "Aider        (Open Source)" ;;
+    codex) echo "Codex CLI    (OpenAI)" ;;
     opencode) echo "OpenCode     (Open Source)" ;;
-    '$SHELL'|"\$SHELL") echo "Shell        ($SHELL)" ;;
-    *)      echo "$1" ;;
+    '$SHELL' | "\$SHELL") echo "Shell        ($SHELL)" ;;
+    *) echo "$1" ;;
   esac
 }
 
@@ -68,7 +68,7 @@ pick_open_cmd() {
   local -a is_available=()
   local available_count=0
 
-  IFS=',' read -ra all_cmds <<< "$cmds_csv"
+  IFS=',' read -ra all_cmds <<<"$cmds_csv"
 
   # Resolve and check availability for each command
   for i in "${!all_cmds[@]}"; do
@@ -142,14 +142,14 @@ pick_open_cmd() {
   echo "" >&2
 
   local selected
-  selected=$(printf '%b\n' "${labels[@]}" | \
+  selected=$(printf '%b\n' "${labels[@]}" |
     fzf \
       --height=$((${#labels[@]} + 4)) \
       --layout=reverse \
       --border=rounded \
       --border-label=" tools " \
       --prompt=" " \
-      --pointer="▸" \
+      --pointer="" \
       --gutter=" " \
       --style=minimal \
       --color="$FZF_COLORS" \
@@ -184,12 +184,55 @@ pick_open_cmd() {
   echo "$SHELL"
 }
 
+# Get config file path for current repo (uses XDG_CONFIG_HOME)
+get_repo_config_path() {
+  local config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/tmux-worktree"
+  local repo_hash
+  repo_hash=$(printf '%s' "$GIT_ROOT" | md5 2>/dev/null || printf '%s' "$GIT_ROOT" | md5sum | cut -d' ' -f1)
+  echo "${config_dir}/${REPO_NAME}-${repo_hash:0:8}.conf"
+}
+
+# Apply sync config: symlink/copy ignored files to worktree
+apply_sync_config() {
+  local src_root="$1"
+  local dest_root="$2"
+  local config_file="$3"
+  local count=0
+
+  while IFS=: read -r mode path; do
+    [ -z "$mode" ] || [ -z "$path" ] && continue
+    [[ "$mode" == \#* ]] && continue
+
+    local src="${src_root}/${path}"
+    local dest="${dest_root}/${path}"
+
+    if [ ! -e "$src" ]; then
+      echo -e "  ${C_DIM}skip:${C_RESET}    ${C_YELLOW}${path}${C_RESET} ${C_DIM}(not found)${C_RESET}"
+      continue
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+
+    if [ "$mode" = "symlink" ]; then
+      ln -sfn "$src" "$dest"
+      echo -e "  ${C_DIM}symlink:${C_RESET} ${C_GREEN}${path}${C_RESET}"
+    elif [ "$mode" = "copy" ]; then
+      cp -a "$src" "$dest"
+      echo -e "  ${C_DIM}copy:${C_RESET}    ${C_GREEN}${path}${C_RESET}"
+    fi
+    ((count++)) || true
+  done <"$config_file"
+
+  echo ""
+  echo -e "${C_DIM}${count} file(s) synced.${C_RESET}"
+}
+
 # Find tmux window name for a given worktree path
 find_tmux_window() {
   local wt_path="$1"
   local session
   session=$(tmux display-message -p '#S')
-  tmux list-windows -t "$session" -F '#{window_index} #{window_name} #{pane_current_path}' 2>/dev/null | \
+  tmux list-windows -t "$session" -F '#{window_index} #{window_name} #{pane_current_path}' 2>/dev/null |
     while read -r idx name path; do
       if [ "$path" = "$wt_path" ]; then
         echo "$idx"

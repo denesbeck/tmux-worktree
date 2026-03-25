@@ -57,14 +57,14 @@ for entry in "${WORKTREES[@]}"; do
   DISPLAY_LIST+="${branch}"$'\n'
 done
 
-SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' | \
+SELECTED=$(echo "$DISPLAY_LIST" | sed '/^$/d' |
   fzf \
     --height=12 \
     --layout=reverse \
     --border=rounded \
     --border-label=" worktrees " \
     --prompt=" " \
-    --pointer="▸" \
+    --pointer="" \
     --gutter=" " \
     --style=minimal \
     --color="$FZF_COLORS" \
