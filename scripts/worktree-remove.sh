@@ -166,12 +166,12 @@ for target in "${TARGETS[@]}"; do
 
   # Remove worktree
   if [ "$IS_DIRTY" = true ]; then
-    if ! git worktree remove "$TARGET_PATH" --force 2>&1; then
+    if ! spin "Removing ${TARGET_BRANCH}..." git worktree remove "$TARGET_PATH" --force; then
       echo -e "${C_YELLOW}Warning: Failed to remove worktree ${TARGET_BRANCH}.${C_RESET}"
       continue
     fi
   else
-    if ! git worktree remove "$TARGET_PATH" 2>&1; then
+    if ! spin "Removing ${TARGET_BRANCH}..." git worktree remove "$TARGET_PATH"; then
       echo -e "${C_YELLOW}Warning: Failed to remove worktree ${TARGET_BRANCH}.${C_RESET}"
       continue
     fi

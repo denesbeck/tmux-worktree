@@ -21,6 +21,31 @@ C_RESET="\033[0m"
 
 FZF_COLORS="bg:-1,fg:-1,bg+:-1,fg+:-1,gutter:-1,current-bg:-1,selected-bg:-1,list-bg:-1,input-bg:-1,header-bg:-1,hl:#ca9ee6,hl+:#ca9ee6,pointer:#e78284,prompt:#8caaee,border:#8caaee,label:#8caaee"
 
+# Run a command with a spinner animation
+# Usage: spin "message" command [args...]
+spin() {
+  local msg="$1"
+  shift
+  local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+  local i=0
+
+  "$@" >/dev/null 2>&1 &
+  local pid=$!
+
+  tput civis 2>/dev/null || true  # hide cursor
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s${C_RESET}" "${frames[$i]}" "$msg"
+    i=$(( (i + 1) % ${#frames[@]} ))
+    sleep 0.08
+  done
+
+  wait "$pid"
+  local exit_code=$?
+  printf "\r\033[K"  # clear spinner line
+  tput cnorm 2>/dev/null || true  # restore cursor
+  return $exit_code
+}
+
 die() {
   echo ""
   echo -e "${C_RED}${C_BOLD}Error:${C_RESET}${C_TEXT} $1${C_RESET}"

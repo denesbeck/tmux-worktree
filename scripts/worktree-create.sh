@@ -172,11 +172,10 @@ echo -e "${C_DIM}base:${C_RESET}      ${C_GREEN}${BASE_BRANCH}${C_RESET}"
 echo -e "${C_DIM}directory:${C_RESET} ${C_TEXT}$(basename "$WORKTREE_DIR")/${C_RESET}"
 echo ""
 
-if ! git worktree add -b "$NEW_BRANCH" "$WORKTREE_DIR" "$BASE_BRANCH" 2>&1; then
+if ! spin "Creating worktree..." git worktree add -b "$NEW_BRANCH" "$WORKTREE_DIR" "$BASE_BRANCH"; then
   die "Failed to create worktree."
 fi
 
-echo ""
 echo -e "${C_GREEN}${C_BOLD}Worktree created!${C_RESET}"
 echo ""
 
