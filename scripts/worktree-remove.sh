@@ -12,13 +12,15 @@ DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@
 DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
 
 # ── Build worktree list ──────────────────────────────────────────
+MAIN_WT_PATH=$(git worktree list | head -1 | awk '{print $1}')
+
 _collect_worktrees() {
   while IFS= read -r line; do
     wt_path=$(echo "$line" | awk '{print $1}')
     wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
     wt_bare=$(echo "$line" | grep -c "(bare)" || true)
 
-    if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
+    if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$MAIN_WT_PATH" ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
       continue
     fi
 
@@ -26,7 +28,7 @@ _collect_worktrees() {
   done < <(git worktree list)
 }
 export -f _collect_worktrees
-export GIT_ROOT DEFAULT_BRANCH
+export MAIN_WT_PATH DEFAULT_BRANCH
 spin_capture WORKTREE_RAW "Loading worktrees..." bash -c "_collect_worktrees"
 
 WORKTREES=()
@@ -148,7 +150,6 @@ fi
 echo ""
 
 # ── Switch to main worktree before destructive operations ────────
-MAIN_WT_PATH=$(git worktree list | head -1 | awk '{print $1}')
 cd "$MAIN_WT_PATH"
 
 # ── Remove all worktrees ─────────────────────────────────────────
