@@ -41,7 +41,7 @@ echo -e "${C_BLUE}${C_BOLD}❯ New branch name${C_RESET}"
 echo ""
 
 while true; do
-  echo -ne "${C_MAUVE}${C_RESET} "
+  echo -ne "${C_MAUVE}${C_RESET} "
   read -r NEW_BRANCH
 
   if [ -z "$NEW_BRANCH" ]; then
@@ -105,47 +105,82 @@ if [ "$SYNC_CHOICE" = "Create new config" ]; then
   spin_capture IGNORED_FILES "Scanning ignored files..." bash -c "git status --ignored --porcelain 2>/dev/null | grep '^!! ' | sed 's/^!! //' | sed 's:\/$::'"
 
   if [ -n "$IGNORED_FILES" ]; then
-    SELECTED=$(echo "$IGNORED_FILES" |
+    # Create temp files for per-file mode selection
+    STATE_FILE=$(mktemp)
+    SYNC_HELPER=$(mktemp)
+    cleanup_sync() { rm -f "$STATE_FILE" "${STATE_FILE}.tmp" "$SYNC_HELPER"; }
+    trap cleanup_sync EXIT
+
+    # Initialize state (all skip)
+    while IFS= read -r file; do
+      printf '·\t%s\n' "$file"
+    done <<<"$IGNORED_FILES" >"$STATE_FILE"
+
+    # Helper for toggle/render (avoids escaping issues in fzf --bind)
+    cat >"$SYNC_HELPER" <<'HELPEREOF'
+#!/usr/bin/env bash
+ACTION="$1"; SF="$2"
+if [ "$ACTION" = "render" ]; then
+  awk -F'\t' '{
+    if($1=="S") printf "\033[38;2;166;209;137m● symlink\033[0m\t%s\n", $2
+    else if($1=="C") printf "\033[38;2;140;170;238m● copy   \033[0m\t%s\n", $2
+    else printf "\033[38;2;115;121;148m○ skip   \033[0m\t%s\n", $2
+  }' "$SF"
+elif [ "$ACTION" = "toggle" ]; then
+  awk -F'\t' -v p="$4" -v m="$3" 'BEGIN{OFS="\t"} $2==p{$1=m} 1' "$SF" > "${SF}.tmp" && mv "${SF}.tmp" "$SF"
+fi
+HELPEREOF
+    chmod +x "$SYNC_HELPER"
+
+    "$SYNC_HELPER" render "$STATE_FILE" |
       fzf \
-        --multi \
         --height=12 \
         --layout=reverse \
         --border=rounded \
         --border-label=" ignored files " \
         --prompt=" " \
         --pointer="" \
-        --marker="● " \
         --gutter=" " \
         --style=minimal \
+        --no-sort \
+        --disabled \
         --color="$FZF_COLORS" \
-        --header="Tab: select · Enter: confirm · Esc: cancel" \
+        --header="s: symlink · c: copy · d: skip · Enter: confirm · Esc: cancel" \
         --no-info \
-        --ansi) || true
+        --ansi \
+        --delimiter=$'\t' \
+        --bind "s:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' S '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
+        --bind "c:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' C '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
+        --bind "d:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' · '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
+        >/dev/null 2>&1 || {
+      cleanup_sync
+      exit 0
+    }
 
-    if [ -z "$SELECTED" ]; then
+    # Check if any files were marked
+    if ! grep -q '^[SC]' "$STATE_FILE"; then
+      cleanup_sync
       exit 0
     fi
 
-    echo ""
-    echo -ne "${C_BLUE}${C_BOLD}❯${C_RESET} ${C_TEXT}(s)ymlink or (c)opy?${C_RESET} ${C_DIM}[s/c]:${C_RESET} "
-    read -rsn1 MODE_CHOICE
-    echo ""
-
-    MODE="symlink"
-    if [ "$MODE_CHOICE" = "c" ] || [ "$MODE_CHOICE" = "C" ]; then
-      MODE="copy"
-    fi
-
-    echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}${MODE}${C_RESET}"
+    # Show summary
+    S_COUNT=$(grep -c '^S' "$STATE_FILE" 2>/dev/null || echo "0")
+    C_COUNT=$(grep -c '^C' "$STATE_FILE" 2>/dev/null || echo "0")
+    SUMMARY=""
+    [ "$S_COUNT" -gt 0 ] && SUMMARY="${S_COUNT} symlink"
+    [ "$C_COUNT" -gt 0 ] && {
+      [ -n "$SUMMARY" ] && SUMMARY="${SUMMARY}, "
+      SUMMARY="${SUMMARY}${C_COUNT} copy"
+    }
+    echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}${SUMMARY}${C_RESET}"
     echo ""
 
     # Save config
     CONFIG_DIR=$(dirname "$REPO_CONFIG")
     mkdir -p "$CONFIG_DIR"
-    while IFS= read -r file; do
-      echo "${MODE}:${file}"
-    done <<<"$SELECTED" >"$REPO_CONFIG"
+    awk -F'\t' '$1=="S"{printf "symlink:%s\n",$2} $1=="C"{printf "copy:%s\n",$2}' "$STATE_FILE" >"$REPO_CONFIG"
 
+    cleanup_sync
     SYNC_CONFIG_FILE="$REPO_CONFIG"
   else
     echo -e "${C_DIM}No ignored files found.${C_RESET}"

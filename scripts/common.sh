@@ -255,6 +255,10 @@ apply_sync_config() {
   local dest_root="$2"
   local config_file="$3"
   local count=0
+  local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+  local i=0
+
+  tput civis 2>/dev/null || true
 
   while IFS=: read -r mode path; do
     [ -z "$mode" ] || [ -z "$path" ] && continue
@@ -270,15 +274,31 @@ apply_sync_config() {
 
     mkdir -p "$(dirname "$dest")"
 
+    # Run operation in background with animated spinner
     if [ "$mode" = "symlink" ]; then
-      ln -sfn "$src" "$dest"
+      ln -sfn "$src" "$dest" &
+    elif [ "$mode" = "copy" ]; then
+      cp -a "$src" "$dest" &
+    fi
+    local pid=$!
+
+    while kill -0 "$pid" 2>/dev/null; do
+      printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s %s...${C_RESET}" "${frames[$i]}" "$mode" "$path"
+      i=$(( (i + 1) % ${#frames[@]} ))
+      sleep 0.08
+    done
+    wait "$pid"
+
+    printf "\r\033[K"
+    if [ "$mode" = "symlink" ]; then
       echo -e "  ${C_DIM}symlink:${C_RESET} ${C_GREEN}${path}${C_RESET}"
     elif [ "$mode" = "copy" ]; then
-      cp -a "$src" "$dest"
       echo -e "  ${C_DIM}copy:${C_RESET}    ${C_GREEN}${path}${C_RESET}"
     fi
     ((count++)) || true
   done <"$config_file"
+
+  tput cnorm 2>/dev/null || true
 
   echo ""
   echo -e "${C_DIM}${count} file(s) synced.${C_RESET}"
