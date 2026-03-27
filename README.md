@@ -11,6 +11,7 @@ tmux-worktree provides a terminal UI for git worktree management directly inside
 **Key Features:**
 - Create worktrees with interactive base branch selection
 - AI tool picker — choose between Claude Code, Gemini CLI, Aider, Codex CLI, OpenCode, or a plain shell when opening a worktree (only installed tools are shown as selectable)
+- Gitignored file sync — symlink or copy gitignored files (e.g. `.env`, build artifacts) into new worktrees, with per-file mode selection and reusable per-repo config
 - Switch between existing worktrees (opens or focuses tmux window)
 - Remove worktrees with multiselect support (remove one or many at once)
 - Safe removal — conditional force for dirty worktrees, safe branch deletion with fallback prompt
@@ -69,8 +70,9 @@ tmux source ~/.config/tmux/tmux.conf
 1. Press `prefix + W`
 2. Select a base branch from the fzf picker
 3. Enter a new branch name
-4. Select a tool to open with (skipped if only one is available)
-5. Worktree is created and a new tmux window opens with the selected tool
+4. Choose how to handle gitignored files — load a saved config, create a new one (pick symlink/copy/skip per file), or skip
+5. Select a tool to open with (skipped if only one is available)
+6. Worktree is created, selected files are synced, and a new tmux window opens with the selected tool
 
 ### Switch workflow
 
@@ -85,6 +87,19 @@ tmux source ~/.config/tmux/tmux.conf
 3. Confirm deletion (explicit force-remove prompt if any worktree has uncommitted changes)
 4. Worktree directories and tmux windows are cleaned up
 5. Branches are deleted with safe delete; if unmerged, prompts for force delete per branch or keeps it
+
+### Gitignored file sync
+
+Git worktrees don't share gitignored files (`.env`, build output, etc.) with the main worktree. During creation, the plugin offers to sync these files:
+
+- **Load config** — reuse a previously saved per-repo config
+- **Create config** — interactively pick a mode for each ignored file:
+  - **Symlink** (`s`) — creates a symlink to the original file (shares changes)
+  - **Copy** (`c`) — copies the file (independent snapshot)
+  - **Skip** (`d`) — don't sync this file
+- **Skip** — create the worktree without syncing any files
+
+Configs are stored in `$XDG_CONFIG_HOME/tmux-worktree/` (defaults to `~/.config/tmux-worktree/`) and are reusable across worktrees in the same repo.
 
 ## Configuration
 
