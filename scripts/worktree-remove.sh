@@ -12,19 +12,27 @@ DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@
 DEFAULT_BRANCH="${DEFAULT_BRANCH:-main}"
 
 # ── Build worktree list ──────────────────────────────────────────
+_collect_worktrees() {
+  while IFS= read -r line; do
+    wt_path=$(echo "$line" | awk '{print $1}')
+    wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
+    wt_bare=$(echo "$line" | grep -c "(bare)" || true)
+
+    if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
+      continue
+    fi
+
+    echo "${wt_branch}|${wt_path}"
+  done < <(git worktree list)
+}
+export -f _collect_worktrees
+export GIT_ROOT DEFAULT_BRANCH
+spin_capture WORKTREE_RAW "Loading worktrees..." bash -c "_collect_worktrees"
+
 WORKTREES=()
-while IFS= read -r line; do
-  wt_path=$(echo "$line" | awk '{print $1}')
-  wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
-  wt_bare=$(echo "$line" | grep -c "(bare)" || true)
-
-  # Skip bare repos, main worktree, and the default branch
-  if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ] || [ "$wt_branch" = "$DEFAULT_BRANCH" ]; then
-    continue
-  fi
-
-  WORKTREES+=("${wt_branch}|${wt_path}")
-done < <(git worktree list)
+while IFS= read -r entry; do
+  [ -n "$entry" ] && WORKTREES+=("$entry")
+done <<< "$WORKTREE_RAW"
 
 if [ ${#WORKTREES[@]} -eq 0 ]; then
   echo -e "${C_DIM}No worktrees found (besides main).${C_RESET}"

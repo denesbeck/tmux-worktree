@@ -46,6 +46,38 @@ spin() {
   return $exit_code
 }
 
+# Run a command with a spinner, capturing stdout into a variable
+# Usage: spin_capture VAR "message" command [args...]
+# Result is stored in the variable named by VAR
+spin_capture() {
+  local var="$1"
+  local msg="$2"
+  shift 2
+  local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+  local i=0
+  local tmpfile
+  tmpfile=$(mktemp)
+
+  "$@" >"$tmpfile" 2>/dev/null &
+  local pid=$!
+
+  tput civis 2>/dev/null || true
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s${C_RESET}" "${frames[$i]}" "$msg"
+    i=$(( (i + 1) % ${#frames[@]} ))
+    sleep 0.08
+  done
+
+  wait "$pid"
+  local exit_code=$?
+  printf "\r\033[K"
+  tput cnorm 2>/dev/null || true
+
+  printf -v "$var" '%s' "$(cat "$tmpfile")"
+  rm -f "$tmpfile"
+  return $exit_code
+}
+
 die() {
   echo ""
   echo -e "${C_RED}${C_BOLD}Error:${C_RESET}${C_TEXT} $1${C_RESET}"

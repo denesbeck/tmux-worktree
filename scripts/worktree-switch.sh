@@ -9,35 +9,41 @@ require_git_root
 header "Switch"
 
 # ── Build worktree list ──────────────────────────────────────────
-WORKTREES=()
-while IFS= read -r line; do
-  wt_path=$(echo "$line" | awk '{print $1}')
-  wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
-  wt_bare=$(echo "$line" | grep -c "(bare)" || true)
+_collect_worktrees() {
+  while IFS= read -r line; do
+    wt_path=$(echo "$line" | awk '{print $1}')
+    wt_branch=$(echo "$line" | sed 's/.*\[\(.*\)\].*/\1/')
+    wt_bare=$(echo "$line" | grep -c "(bare)" || true)
 
-  # Skip bare repos and the main worktree
-  if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ]; then
-    continue
-  fi
-
-  # Check dirty state
-  dirty=""
-  if [ -d "$wt_path" ]; then
-    changed=$(git -C "$wt_path" status --porcelain 2>/dev/null | head -1)
-    if [ -n "$changed" ]; then
-      dirty=" *"
+    if [ "$wt_bare" -gt 0 ] || [ "$wt_path" = "$GIT_ROOT" ]; then
+      continue
     fi
-  fi
 
-  # Check if tmux window exists
-  win_idx=$(find_tmux_window "$wt_path")
-  tmux_icon=""
-  if [ -n "$win_idx" ]; then
-    tmux_icon="  "
-  fi
+    dirty=""
+    if [ -d "$wt_path" ]; then
+      changed=$(git -C "$wt_path" status --porcelain 2>/dev/null | head -1)
+      if [ -n "$changed" ]; then
+        dirty=" *"
+      fi
+    fi
 
-  WORKTREES+=("${wt_branch}${dirty}${tmux_icon}|${wt_path}|${win_idx}")
-done < <(git worktree list)
+    win_idx=$(find_tmux_window "$wt_path")
+    tmux_icon=""
+    if [ -n "$win_idx" ]; then
+      tmux_icon="  "
+    fi
+
+    echo "${wt_branch}${dirty}${tmux_icon}|${wt_path}|${win_idx}"
+  done < <(git worktree list)
+}
+export -f _collect_worktrees find_tmux_window
+export GIT_ROOT
+spin_capture WORKTREE_RAW "Loading worktrees..." bash -c "_collect_worktrees"
+
+WORKTREES=()
+while IFS= read -r entry; do
+  [ -n "$entry" ] && WORKTREES+=("$entry")
+done <<< "$WORKTREE_RAW"
 
 if [ ${#WORKTREES[@]} -eq 0 ]; then
   echo -e "${C_DIM}No worktrees found (besides main).${C_RESET}"

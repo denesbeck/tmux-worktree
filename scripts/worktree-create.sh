@@ -102,7 +102,7 @@ fi
 SYNC_CONFIG_FILE=""
 
 if [ "$SYNC_CHOICE" = "Create new config" ]; then
-  IGNORED_FILES=$(git status --ignored --porcelain 2>/dev/null | grep '^!! ' | sed 's/^!! //' | sed 's:/$::')
+  spin_capture IGNORED_FILES "Scanning ignored files..." bash -c "git status --ignored --porcelain 2>/dev/null | grep '^!! ' | sed 's/^!! //' | sed 's:\/$::'"
 
   if [ -n "$IGNORED_FILES" ]; then
     SELECTED=$(echo "$IGNORED_FILES" |
