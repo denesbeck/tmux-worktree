@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Pre-commit hook for tmux-worktree
+# This hook runs linting and formatting checks on shell scripts before commit
+
+set -e
+
+echo "Running pre-commit checks..."
+
+# Get list of staged shell files
+STAGED_SHELL_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh|bash)$|\.tmux$' || true)
+
+if [ -z "$STAGED_SHELL_FILES" ]; then
+  echo "No shell files to check. Skipping pre-commit checks."
+  exit 0
+fi
+
+echo "Checking shell files: $STAGED_SHELL_FILES"
+
+# Check if shellcheck is installed
+if ! command -v shellcheck &> /dev/null; then
+  echo "⚠️  shellcheck is not installed. Install it to run linting checks."
+  echo "   macOS: brew install shellcheck"
+  echo "   Linux: apt-get install shellcheck or yum install shellcheck"
+  exit 0
+fi
+
+# Run shellcheck on staged shell files
+echo "Running shellcheck..."
+SHELLCHECK_ISSUES=0
+for file in $STAGED_SHELL_FILES; do
+  if [ -f "$file" ]; then
+    if ! shellcheck "$file"; then
+      SHELLCHECK_ISSUES=$((SHELLCHECK_ISSUES + 1))
+    fi
+  fi
+done
+
+if [ $SHELLCHECK_ISSUES -gt 0 ]; then
+  echo "❌ shellcheck found issues in $SHELLCHECK_ISSUES file(s). Please fix them before committing."
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0
