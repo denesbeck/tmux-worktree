@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -eo pipefail
 
 # ── Dependency checks ────────────────────────────────────────────
@@ -32,17 +33,17 @@ spin() {
   "$@" >/dev/null 2>&1 &
   local pid=$!
 
-  tput civis 2>/dev/null || true  # hide cursor
+  tput civis 2>/dev/null || true # hide cursor
   while kill -0 "$pid" 2>/dev/null; do
     printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s${C_RESET}" "${frames[$i]}" "$msg"
-    i=$(( (i + 1) % ${#frames[@]} ))
+    i=$(((i + 1) % ${#frames[@]}))
     sleep 0.08
   done
 
   wait "$pid"
   local exit_code=$?
-  printf "\r\033[K"  # clear spinner line
-  tput cnorm 2>/dev/null || true  # restore cursor
+  printf "\r\033[K"              # clear spinner line
+  tput cnorm 2>/dev/null || true # restore cursor
   return $exit_code
 }
 
@@ -64,7 +65,7 @@ spin_capture() {
   tput civis 2>/dev/null || true
   while kill -0 "$pid" 2>/dev/null; do
     printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s${C_RESET}" "${frames[$i]}" "$msg"
-    i=$(( (i + 1) % ${#frames[@]} ))
+    i=$(((i + 1) % ${#frames[@]}))
     sleep 0.08
   done
 
@@ -105,13 +106,14 @@ header() {
 
 # Labels for known CLI tools
 tool_label() {
+  # shellcheck disable=SC2016
   case "$1" in
     claude) echo "Claude Code  (Anthropic)" ;;
     gemini) echo "Gemini CLI   (Google)" ;;
     aider) echo "Aider        (Open Source)" ;;
     codex) echo "Codex CLI    (OpenAI)" ;;
     opencode) echo "OpenCode     (Open Source)" ;;
-    '$SHELL' | "\$SHELL") echo "Shell        ($SHELL)" ;;
+    '$SHELL') echo "Shell        ($SHELL)" ;;
     *) echo "$1" ;;
   esac
 }
@@ -131,10 +133,11 @@ pick_open_cmd() {
   for i in "${!all_cmds[@]}"; do
     local cmd
     cmd=$(echo "${all_cmds[$i]}" | xargs) # trim whitespace
-    all_cmds[$i]="$cmd"
+    all_cmds[i]="$cmd"
 
-    if [ "$cmd" = '$SHELL' ] || [ "$cmd" = "\$SHELL" ]; then
-      all_cmds[$i]='$SHELL'
+    # shellcheck disable=SC2016
+    if [ "$cmd" = '$SHELL' ]; then
+      all_cmds[i]='$SHELL'
       is_available+=("1")
       ((available_count++)) || true
     elif command -v "$cmd" &>/dev/null; then
@@ -155,6 +158,7 @@ pick_open_cmd() {
     for i in "${!all_cmds[@]}"; do
       if [ "${is_available[$i]}" = "1" ]; then
         local single="${all_cmds[$i]}"
+        # shellcheck disable=SC2016
         if [ "$single" = '$SHELL' ]; then
           echo "$SHELL"
         else
@@ -229,6 +233,7 @@ pick_open_cmd() {
   for i in "${!labels[@]}"; do
     if [ "${is_available[$i]}" = "1" ] && [ "${labels[$i]}" = "$selected" ]; then
       local picked="${all_cmds[$i]}"
+      # shellcheck disable=SC2016
       if [ "$picked" = '$SHELL' ]; then
         echo "$SHELL"
       else
@@ -284,7 +289,7 @@ apply_sync_config() {
 
     while kill -0 "$pid" 2>/dev/null; do
       printf "\r${C_MAUVE}%s${C_RESET} ${C_DIM}%s %s...${C_RESET}" "${frames[$i]}" "$mode" "$path"
-      i=$(( (i + 1) % ${#frames[@]} ))
+      i=$(((i + 1) % ${#frames[@]}))
       sleep 0.08
     done
     wait "$pid"
@@ -310,7 +315,7 @@ find_tmux_window() {
   local session
   session=$(tmux display-message -p '#S')
   tmux list-windows -t "$session" -F '#{window_index} #{window_name} #{pane_current_path}' 2>/dev/null |
-    while read -r idx name path; do
+    while read -r idx _ path; do
       if [ "$path" = "$wt_path" ]; then
         echo "$idx"
         return

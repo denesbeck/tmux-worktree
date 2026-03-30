@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
 
 OPEN_CMDS="${1:-claude,gemini,aider,codex,opencode,\$SHELL}"
@@ -152,36 +153,37 @@ HELPEREOF
         --bind "s:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' S '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
         --bind "c:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' C '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
         --bind "d:execute-silent('$SYNC_HELPER' toggle '$STATE_FILE' · '{2}')+reload('$SYNC_HELPER' render '$STATE_FILE')" \
+        --bind "enter:accept" \
         >/dev/null 2>&1 || {
       cleanup_sync
       exit 0
     }
 
     # Check if any files were marked
-    if ! grep -q '^[SC]' "$STATE_FILE"; then
+    if grep -q '^[SC]' "$STATE_FILE"; then
+      S_COUNT=$(grep -c '^S' "$STATE_FILE" 2>/dev/null || echo "0")
+      C_COUNT=$(grep -c '^C' "$STATE_FILE" 2>/dev/null || echo "0")
+      SUMMARY=""
+      [ "$S_COUNT" -gt 0 ] && SUMMARY="${S_COUNT} symlink"
+      [ "$C_COUNT" -gt 0 ] && {
+        [ -n "$SUMMARY" ] && SUMMARY="${SUMMARY}, "
+        SUMMARY="${SUMMARY}${C_COUNT} copy"
+      }
+      echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}${SUMMARY}${C_RESET}"
+      echo ""
+
+      # Save config
+      CONFIG_DIR=$(dirname "$REPO_CONFIG")
+      mkdir -p "$CONFIG_DIR"
+      awk -F'\t' '$1=="S"{printf "symlink:%s\n",$2} $1=="C"{printf "copy:%s\n",$2}' "$STATE_FILE" >"$REPO_CONFIG"
+
       cleanup_sync
-      exit 0
+      SYNC_CONFIG_FILE="$REPO_CONFIG"
+    else
+      cleanup_sync
+      echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}none${C_RESET}"
+      echo ""
     fi
-
-    # Show summary
-    S_COUNT=$(grep -c '^S' "$STATE_FILE" 2>/dev/null || echo "0")
-    C_COUNT=$(grep -c '^C' "$STATE_FILE" 2>/dev/null || echo "0")
-    SUMMARY=""
-    [ "$S_COUNT" -gt 0 ] && SUMMARY="${S_COUNT} symlink"
-    [ "$C_COUNT" -gt 0 ] && {
-      [ -n "$SUMMARY" ] && SUMMARY="${SUMMARY}, "
-      SUMMARY="${SUMMARY}${C_COUNT} copy"
-    }
-    echo -e "${C_DIM}Selected:${C_RESET} ${C_GREEN}${SUMMARY}${C_RESET}"
-    echo ""
-
-    # Save config
-    CONFIG_DIR=$(dirname "$REPO_CONFIG")
-    mkdir -p "$CONFIG_DIR"
-    awk -F'\t' '$1=="S"{printf "symlink:%s\n",$2} $1=="C"{printf "copy:%s\n",$2}' "$STATE_FILE" >"$REPO_CONFIG"
-
-    cleanup_sync
-    SYNC_CONFIG_FILE="$REPO_CONFIG"
   else
     echo -e "${C_DIM}No ignored files found.${C_RESET}"
     echo ""
