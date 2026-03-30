@@ -4,6 +4,8 @@
 
 A tmux plugin for managing git worktrees. Create, switch, and remove worktrees from a floating popup — each worktree opens in its own tmux window.
 
+![tmux-worktree-create](https://github.com/user-attachments/assets/94ea2ce9-ddc3-47bc-93d2-0edd1875d36e)
+
 ## Overview
 
 tmux-worktree provides a terminal UI for git worktree management directly inside tmux. It uses `fzf` for interactive branch selection and `tmux display-popup` for a floating window experience.
